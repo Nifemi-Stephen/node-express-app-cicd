@@ -25,7 +25,7 @@ async function runTest() {
         throw new Error(`Expected HTTP 200 but received ${response.status}`)
       }
 
-      if (body !== 'Hello World!') {
+      if (body !== 'Hello World! This confirms the cd deployment') {
         throw new Error(`Unexpected response: ${body}`)
       }
 
