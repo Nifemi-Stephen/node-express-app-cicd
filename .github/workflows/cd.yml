@@ -1,0 +1,50 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    if: >-
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'master'
+      }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy application on EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          set -eu
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/ec2_key
+          chmod 600 ~/.ssh/ec2_key
+
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+          ssh \
+            -i ~/.ssh/ec2_key \
+            -o StrictHostKeyChecking=yes \
+            "$EC2_USERNAME@$EC2_HOST" \
+            'cd ~/github-nodejs-app/node-express-app-cicd &&
+             git fetch origin master &&
+             git reset --hard origin/master &&
+             npm ci &&
+             pm2 restart nodejs-app'
+
+          rm -f ~/.ssh/ec2_key
