@@ -149,6 +149,43 @@ OR in Bash, use touch:
 touch .gitignore
 ```
 
+## CI/CD and AWS EC2 Deployment
+
+This project extends the original Node.js application with automated testing and deployment using GitHub Actions and AWS EC2.
+
+### Continuous Integration (CI)
+
+The original application did not include a functional automated smoke test. A smoke test was added in `test/smoke-test.js` and configured in `package.json`.
+
+The test starts the application, requests the `/hello` endpoint, and verifies the successful response and expected `Hello World!` message.
+
+The workflow in `.github/workflows/ci.yml` installs dependencies and runs the test on pushes and pull requests targeting `master`.
+
+### Continuous Deployment (CD)
+
+The workflow in `.github/workflows/cd.yml` deploys the application to an Ubuntu EC2 instance after a successful CI run triggered by a push to `master`.
+
+The deployment connects over SSH, fetches the latest code from GitHub, installs dependencies, and restarts the application using PM2.
+
+### Deployment Details
+
+* **Platform:** AWS EC2 running Ubuntu
+* **Process manager:** PM2
+* **Application port:** `3002`
+* **Test endpoint:** `/hello`
+* **Expected response:** `Hello World! This confirms the cd deployment`
+
+Application URL: `http://<EC2-PUBLIC-IP>:3002`
+
+Replace `<EC2-PUBLIC-IP>` with the instance's public IPv4 address if publishing the live URL.
+
+### Configuration and Security
+
+The EC2 host, SSH username, and private SSH key are stored as GitHub repository secrets rather than committed to the repository.
+
+For production use, restrict SSH access and serve the application through a properly configured HTTPS reverse proxy.
+
+
 ## Optional: Deployment
 
 Heroku will host a server-side app for free. Install the Heroku command line interface (CLI).
